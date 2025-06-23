@@ -19,6 +19,8 @@ import Faturamento from './pages/sector/Faturamento';
 import Admin from './pages/Admin';
 import NewOrder from './pages/NewOrder';
 import ManageEmployees from './pages/admin/ManageEmployees';
+import CollaboratorProfile from './pages/CollaboratorProfile';
+import HumanResources from './pages/HumanResources';
 
 import './App.css';
 
@@ -34,6 +36,7 @@ function App() {
 
           {/* Rotas Protegidas da Aplicação Principal */}
           <Route element={<ProtectedRoute />}>
+            <Route path="/perfil-colaboradores" element={<CollaboratorProfile />} />
             <Route path="/pedidos/novo" element={<NewOrder />} />
             <Route path="/comercial" element={<Comercial />} />
             <Route path="/compras" element={<Compras />} />
@@ -45,6 +48,9 @@ function App() {
           </Route>
 
           {/* Rotas Protegidas de Administração */}
+          <Route element={<ProtectedRoute allowedRoles={['administrador', 'Gerente de RH']} />}>
+            <Route path="/recursos-humanos" element={<HumanResources />} />
+          </Route>
           <Route element={<ProtectedRoute allowedRoles={['administrador']} />}>
             <Route path="/admin" element={<Admin />} />
             <Route path="/admin/funcionarios" element={<ManageEmployees />} />

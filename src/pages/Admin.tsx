@@ -76,6 +76,7 @@ export default function Admin() {
                   >
                     <option>operador</option>
                     <option>gerente</option>
+                    <option>Gerente de RH</option>
                     <option>administrador</option>
                   </select>
                 </td>

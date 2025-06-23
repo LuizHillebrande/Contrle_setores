@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { type User, onAuthStateChanged } from 'firebase/auth';
+import { type User, onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth, db } from '../firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -8,6 +8,7 @@ interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
   userRole: string | null; // e.g., 'operador', 'gerente', 'administrador'
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,6 +31,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);
+
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      // O onAuthStateChanged vai lidar com a limpeza do estado do usuário.
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+      throw error;
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -61,6 +72,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     currentUser,
     loading,
     userRole,
+    logout,
   };
 
   return (

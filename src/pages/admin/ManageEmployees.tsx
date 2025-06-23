@@ -2,15 +2,20 @@ import React, { useState, useEffect, useRef } from 'react';
 import { collection, onSnapshot, doc, setDoc, deleteDoc, addDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { SECTOR_ORDER } from '../../config/sectors';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface Funcionario {
   id: string; // ID do documento do Firestore
   chapa: string;
   nome: string;
   setores: string[];
+  empresaContratante?: string;
 }
 
+const EMPRESAS = ['HOSPI BIO', 'JOMAR', 'BGF', 'LICITAMED', 'S/ REGISTRO'];
+
 export default function ManageEmployees() {
+  const { userRole } = useAuth();
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
   const [loading, setLoading] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
@@ -22,6 +27,9 @@ export default function ManageEmployees() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
+
+  // Campos de RH
+  const [empresaContratante, setEmpresaContratante] = useState('');
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'funcionarios'), (snapshot) => {
@@ -44,6 +52,7 @@ export default function ManageEmployees() {
     setNome('');
     setSetoresSelecionados([]);
     setEditingId(null);
+    setEmpresaContratante('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,15 +63,30 @@ export default function ManageEmployees() {
     }
     setIsSubmitting(true);
 
-    const employeeData = { chapa, nome, setores: setoresSelecionados };
+    const employeeData: Omit<Funcionario, 'id' | 'salarioBruto' | 'adiantamentoSalarial' | 'descontos'> & { empresaContratante?: string } = { 
+      chapa, 
+      nome, 
+      setores: setoresSelecionados,
+      ...(userRole === 'administrador' && {
+        empresaContratante,
+      })
+    };
+    
+    const docData: any = { chapa, nome, setores: setoresSelecionados };
+    if (userRole === 'administrador') {
+        docData.empresaContratante = empresaContratante;
+    }
 
     try {
       if (editingId) {
         // Atualizar funcionário existente
-        await setDoc(doc(db, 'funcionarios', editingId), employeeData);
+        await setDoc(doc(db, 'funcionarios', editingId), docData, { merge: true });
       } else {
-        // Adicionar novo funcionário
-        await addDoc(collection(db, 'funcionarios'), employeeData);
+        // Adicionar novo funcionário - campos financeiros serão zerados
+        docData.salarioBruto = 0;
+        docData.adiantamentoSalarial = 0;
+        docData.descontos = 0;
+        await addDoc(collection(db, 'funcionarios'), docData);
       }
       clearForm();
     } catch (error) {
@@ -78,6 +102,9 @@ export default function ManageEmployees() {
     setChapa(func.chapa);
     setNome(func.nome);
     setSetoresSelecionados(func.setores);
+    if(userRole === 'administrador') {
+      setEmpresaContratante(func.empresaContratante || '');
+    }
     formRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -149,6 +176,17 @@ export default function ManageEmployees() {
               <input type="text" id="nome" value={nome} onChange={e => setNome(e.target.value)} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required />
             </div>
           </div>
+          {userRole === 'administrador' && (
+            <div className="grid grid-cols-1 pt-4 border-t mt-4">
+              <div>
+                <label htmlFor="empresaContratante" className="block text-sm font-medium text-gray-700">Empresa Contratante</label>
+                <select id="empresaContratante" value={empresaContratante} onChange={e => setEmpresaContratante(e.target.value)} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                  <option value="">Selecione...</option>
+                  {EMPRESAS.map(emp => <option key={emp} value={emp}>{emp}</option>)}
+                </select>
+              </div>
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-gray-700">Setores</label>
             <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">

@@ -52,6 +52,16 @@ export default function Sidebar({ isOpen, setOpen }: SidebarProps) {
               {sector.name}
             </NavLink>
           ))}
+          
+          <NavLink to="/perfil-colaboradores" className={({ isActive }) => `block px-3 py-2 rounded-md text-base font-medium ${isActive ? activeLinkClass : inactiveLinkClass}`}>
+            Perfil dos Colaboradores
+          </NavLink>
+
+          {(userRole === 'administrador' || userRole === 'Gerente de RH') && (
+            <NavLink to="/recursos-humanos" className={({ isActive }) => `block px-3 py-2 rounded-md text-base font-medium ${isActive ? activeLinkClass : inactiveLinkClass}`}>
+              Recursos Humanos
+            </NavLink>
+          )}
 
           {userRole === 'administrador' && (
             <div className="pt-4 mt-4 border-t border-gray-700">
